@@ -1,3 +1,4 @@
+#include <iostream>
 #include <math.h>
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
@@ -37,6 +38,12 @@ inline float power(float exponent)
 {
     return PowerFunction<base>::invoke(exponent);
 }
+
+const int tooltip_grid = 146;
+const int tooltip_faint_text = 67;
+const int tooltip_text = 66;
+const int tooltip_curve = 177;
+const int tooltip_major_grid = 105;
 
 class DynTooltip : private Fl_Menu_Window {
  public:
@@ -178,7 +185,7 @@ void DynTooltip::tipHandle(int event)
 void custom_graphics(float val,int W,int H)
 {
     int x0,y0,i;
-    int _w = 0, _h = 0;
+    int _w = 256, _h = 128;
     float x,y,p;
     x0 = W / 2 - (_w / 2);
     y0 = H;
@@ -209,10 +216,10 @@ void custom_graphics(float val,int W,int H)
         for (i = 0; i < 4; i++) /* 10x / 10%, 100x / 1% ... */
         {
             y = ry * (i + 1);
-            //fl_color(tooltip_grid);
+            fl_color(tooltip_grid);
             fl_line(x0, cy - y, x0 + _w, cy - y);
             fl_line(x0, cy + y, x0 + _w, cy + y);
-            //fl_color(tooltip_faint_text);
+            fl_color(tooltip_faint_text);
             fl_draw(xMarkers[i].c_str(), x0 - 28, (cy - y - 4), 24, 12,
                     Fl_Align(FL_ALIGN_RIGHT));
             fl_draw(xMarkers[i + 4].c_str(), x0 - 28, (cy + y - 4), 24, 12,
@@ -221,7 +228,7 @@ void custom_graphics(float val,int W,int H)
 
         /* Hz lines */
 
-        //fl_color(tooltip_grid); /* Lighter inner lines*/
+        fl_color(tooltip_grid); /* Lighter inner lines*/
 
         for (i = 10;i != 0; i *= 10)
         {
@@ -241,9 +248,9 @@ void custom_graphics(float val,int W,int H)
         for (i = 0; i < 4; i++) /* 20, 100, 1k, 10k */
         {
             x = x0 + (i == 0 ?  0 : ((float)i + 1 - lg1020) * rx);
-            //fl_color(tooltip_major_grid); /* Darker boundary lines */
+            fl_color(tooltip_major_grid); /* Darker boundary lines */
             fl_line(x, y0, x, y0 - _h);
-            //fl_color(tooltip_text);
+            fl_color(tooltip_text);
             fl_draw(hzMarkers[i].c_str(), x - 20, y0 + 4, 40, 12,
                     Fl_Align(FL_ALIGN_CENTER));
         }
@@ -255,7 +262,7 @@ void custom_graphics(float val,int W,int H)
         fl_line(x0 - margin, cy, x0 + _w, cy);
 
         /* Function curve */
-        //fl_color(tooltip_curve);
+        fl_color(tooltip_curve);
         if ((int)val == 0)
         {
             fl_line(x0, cy, x0 + _w, cy);
@@ -352,6 +359,7 @@ WidgetPDial::WidgetPDial(int x,int y, int w, int h, const char *label) : Fl_Dial
     Fl_Group *save = Fl_Group::current();
     dyntip = new DynTooltip();
     Fl_Group::current(save);
+    maximum(127);
 }
 
 WidgetPDial::~WidgetPDial()
@@ -432,16 +440,8 @@ int WidgetPDial::handle(int event)
 }
 
 int main(int argc, char* argv[]) {
-  Fl_Window *window = new Fl_Window(340, 300);
-
-  Fl_Box *box = new Fl_Box(20, 40, 300, 100, "Hello, World!");
-  box->box(FL_UP_BOX);
-  box->labelfont(FL_BOLD + FL_ITALIC);
-  box->labelsize(36);
-  box->labeltype(FL_SHADOW_LABEL);
-
-  auto *dial = new WidgetPDial(20, 150, 50, 100);
-
+  Fl_Window *window = new Fl_Window(340, 180);
+  auto *dial = new WidgetPDial(20, 40, 300, 100);
   window->end();
 
   window->show(argc, argv);
