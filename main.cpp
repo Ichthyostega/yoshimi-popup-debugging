@@ -50,6 +50,8 @@ const int knob_high = 207;
 const int knob_lit = 199;
 const int knob_point = 145;
 
+Fl_Window* other_window;
+
 class DynTooltip : private Fl_Menu_Window {
  public:
   DynTooltip();
@@ -276,6 +278,8 @@ void custom_graphics(float val,int W,int H)
         {
             const float p = ((int)val / 64.0f) * 3.0;
 
+            Fl::cairo_make_current(other_window);
+
             /* Cairo not necessary, but makes it easier to read the graph */
 #ifndef YOSHIMI_CAIRO_LEGACY
             cairo_t *cr = Fl::cairo_make_current(Fl_Window::current());
@@ -459,6 +463,7 @@ void WidgetPDial::draw()
         */
     double val = (value() - minimum()) / (maximum() - minimum());
 #ifndef YOSHIMI_CAIRO_LEGACY
+    Fl::cairo_make_current(other_window);
     cairo_t* cr = Fl::cairo_make_current(window());
                // works both with Wayland and X11
 
@@ -571,6 +576,9 @@ void WidgetPDial::draw()
 }
 
 int main(int argc, char* argv[]) {
+  other_window = new Fl_Window(340, 180);
+  other_window->end();
+
   Fl_Window *window = new Fl_Window(340, 180);
   auto *dial = new WidgetPDial(20, 40, 300, 100);
   window->end();
