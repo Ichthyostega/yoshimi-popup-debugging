@@ -44,6 +44,11 @@ const int tooltip_faint_text = 67;
 const int tooltip_text = 66;
 const int tooltip_curve = 177;
 const int tooltip_major_grid = 105;
+const int knob_ring = 144;
+const int knob_low = 244;
+const int knob_high = 207;
+const int knob_lit = 199;
+const int knob_point = 145;
 
 class DynTooltip : private Fl_Menu_Window {
  public:
@@ -337,6 +342,8 @@ public:
 
   int handle(int event) override;
 
+  void draw() override;
+
 void value(double val) /* override */
 {
     Fl_Valuator::value(val);
@@ -437,6 +444,130 @@ int WidgetPDial::handle(int event)
     dyntip->setValue(value());
     dyntip->tipHandle(event);
     return res;
+}
+
+void WidgetPDial::draw()
+{
+    float scale = 1.0f;
+    int cx = x() * scale, cy = y() * scale, sx = w() * scale, sy = h() * scale;
+    double d = (sx>sy)?sy:sx; // d = the smallest side -2
+    double dh = d/2;
+       /*
+        * doing away with the fixed outer band. It's out of place now!
+        * fl_color(170,170,170);
+        * fl_pie(cx - 2, cy - 2, d + 4, d + 4, 0, 360);
+        */
+    double val = (value() - minimum()) / (maximum() - minimum());
+#ifndef YOSHIMI_CAIRO_LEGACY
+    cairo_t* cr = Fl::cairo_make_current(window());
+               // works both with Wayland and X11
+
+#else
+    // Legacy solution : retrieve drawing surface from XServer
+    cairo_surface_t* Xsurface = cairo_xlib_surface_create
+        (fl_display, fl_window, fl_visual->visual,Fl_Window::current()->w() * scale,
+        Fl_Window::current()->h() * scale);
+    cairo_t* cr = cairo_create (Xsurface);
+#endif
+    cairo_save(cr);
+    cairo_translate(cr,cx+dh,cy+dh);
+    //relative lengths of the various parts:
+    double rCint = 10.5/35;
+    double rCout = 13.0/35;
+    double rHand = 8.0/35;
+    double rGear = 15.0/35;
+
+    unsigned char r,g,b;
+    //drawing base dark circle
+    Fl::get_color(knob_ring, r, g, b); // 51,51,51
+    if (active_r())
+    {
+       /*
+        * cairo_pattern_create_rgb(r/255.0,g/255.0,b/255.0);
+        * The above line seems to be wrong and draws black
+        * regardless of the selection.
+        * The line below works.
+        * Will G.
+        */
+        cairo_set_source_rgb(cr,r/255.0,g/255.0,b/255.0);
+    }
+    else
+    {
+        cairo_set_source_rgb(cr,0.4,0.4,0.4);
+    }
+    cairo_arc(cr,0,0,dh,0,2*M_PI);
+    cairo_fill(cr);
+
+    cairo_pattern_t* pat;
+    Fl::get_color(knob_low, r, g, b);
+    float R1 = r/255.0; // 186
+    float G1 = g/255.0; // 198
+    float B1 = b/255.0; // 211
+
+    Fl::get_color(knob_high, r, g, b);
+    float R2 = r/255.0; // 231
+    float G2 = g/255.0; // 235
+    float B2 = b/255.0; // 239
+
+    //drawing the inner circle:
+    pat = cairo_pattern_create_linear(0.5*dh,0.5*dh,0,-0.5*dh);
+    cairo_pattern_add_color_stop_rgba (pat, 0, 0.8*R1, 0.8*G1, 0.8*B1, 1);
+    cairo_pattern_add_color_stop_rgba (pat, 1, R2, G2, B2, 1);
+    cairo_set_source (cr, pat);
+    cairo_arc(cr,0,0,d*rCout,0,2*M_PI);
+    cairo_fill(cr);
+    //drawing the outer circle:
+    pat = cairo_pattern_create_radial(2.0/35*d,6.0/35*d,2.0/35*d,0,0,d*rCint);
+    cairo_pattern_add_color_stop_rgba (pat, 0, R2, G2, B2, 1);
+    cairo_pattern_add_color_stop_rgba (pat, 1, R1, G1, B1, 1);
+    cairo_set_source (cr, pat);
+    cairo_arc(cr,0,0,d*rCint,0,2*M_PI);
+    cairo_fill(cr);
+    //drawing the "light" circle:
+    int linewidth = int(2.0f * sx / 30);
+    if (linewidth < 2)
+        linewidth = 2;
+    if (active_r())
+    {
+        Fl::get_color(knob_lit, r, g, b); // 0, 197, 255
+        cairo_set_source_rgb(cr,r/255.0,g/255.0, b/255.0); //light blue
+    }
+    else
+    {
+        cairo_set_source_rgb(cr,0.6,0.7,0.8);
+    }
+    cairo_set_line_width (cr, linewidth);
+    cairo_new_sub_path(cr);
+    cairo_arc(cr,0,0,d*rGear,0.75*M_PI,+val*1.5*M_PI+0.75*M_PI);
+    cairo_stroke(cr);
+    //drawing the hand:
+    if (active_r())
+    {
+        if (selection_color() == 8)
+            selection_color(knob_point);
+        Fl::get_color(selection_color(), r, g, b); // 61, 61, 61
+        cairo_set_source_rgb(cr,r/255.0,g/255.0,b/255.0);
+    }
+    else
+    {
+        cairo_set_source_rgb(cr,111.0/255,111.0/255,111.0/255);
+    }
+    cairo_rotate(cr,val*3/2*M_PI+0.25*M_PI);
+    cairo_set_line_width (cr, linewidth);
+    cairo_move_to(cr,0,0);
+    cairo_line_to(cr,0,d*rHand);
+    cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
+    cairo_stroke (cr);
+    //freeing the resources
+    cairo_pattern_destroy(pat);
+    cairo_restore(cr);
+#ifndef YOSHIMI_CAIRO_LEGACY
+    // Fltk handles the lifecycle of cr in fltk >= 1.4.0
+    Fl::cairo_flush(cr);
+#else
+    cairo_surface_destroy(Xsurface);
+    cairo_destroy(cr);
+#endif
 }
 
 int main(int argc, char* argv[]) {
