@@ -278,7 +278,9 @@ void custom_graphics(float val,int W,int H)
         {
             const float p = ((int)val / 64.0f) * 3.0;
 
+std::cout<<"Popup-draw: cairo_make_current(other_window)"<<std::endl;
             Fl::cairo_make_current(other_window);
+std::cout<<"Popup-draw: cairo_make_current(Fl_Window::current()))"<<std::endl;
 
             /* Cairo not necessary, but makes it easier to read the graph */
 #ifndef YOSHIMI_CAIRO_LEGACY
@@ -463,7 +465,9 @@ void WidgetPDial::draw()
         */
     double val = (value() - minimum()) / (maximum() - minimum());
 #ifndef YOSHIMI_CAIRO_LEGACY
+std::cout<<"Widget-draw: cairo_make_current(other_window)"<<std::endl;
     Fl::cairo_make_current(other_window);
+std::cout<<"Widget-draw: cairo_make_current(window())"<<std::endl;
     cairo_t* cr = Fl::cairo_make_current(window());
                // works both with Wayland and X11
 
