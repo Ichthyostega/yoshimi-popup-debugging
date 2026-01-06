@@ -588,5 +588,6 @@ int main(int argc, char* argv[]) {
   window->end();
 
   window->show(argc, argv);
+  other_window->show();
   return Fl::run();
 }
