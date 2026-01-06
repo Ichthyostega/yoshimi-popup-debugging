@@ -1,0 +1,2 @@
+- https://stackoverflow.com/questions/79859360/fltk-wayland-x11-custom-drawing-in-a-pop-up-window/79860970#comment140929596_79860970
+- https://github.com/Yoshimi/yoshimi/issues/243
